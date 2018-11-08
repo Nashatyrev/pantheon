@@ -15,6 +15,7 @@ package tech.pegasys.pantheon.services.kvstore;
 import static com.google.common.base.Preconditions.checkState;
 
 import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.source.DataSource;
 
 import java.io.Closeable;
 import java.util.Objects;
@@ -22,7 +23,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /** Service provided by pantheon to facilitate persistent data storage. */
-public interface KeyValueStorage extends Closeable {
+public interface KeyValueStorage
+    extends DataSource<BytesValue, BytesValue>, Closeable {
 
   /**
    * @param key Index into persistent data repository.
@@ -49,6 +51,8 @@ public interface KeyValueStorage extends Closeable {
    * @return An object representing the transaction.
    */
   Transaction getStartTransaction() throws StorageException;
+
+  default void commit() {};
 
   /**
    * Stream all stored key-value pairs.

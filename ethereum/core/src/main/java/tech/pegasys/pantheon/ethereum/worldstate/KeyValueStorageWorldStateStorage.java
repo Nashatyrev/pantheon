@@ -16,68 +16,76 @@ import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.source.*;
 
 import java.util.Optional;
+import java.util.function.Function;
 
 public class KeyValueStorageWorldStateStorage implements WorldStateStorage {
 
-  private final KeyValueStorage keyValueStorage;
+  private final DataSource<BytesValue, BytesValue> keyValueStorage;
 
-  public KeyValueStorageWorldStateStorage(final KeyValueStorage keyValueStorage) {
+  public KeyValueStorageWorldStateStorage(final DataSource<BytesValue, BytesValue> keyValueStorage) {
     this.keyValueStorage = keyValueStorage;
   }
 
   @Override
-  public Optional<BytesValue> getCode(final Hash codeHash) {
-    return keyValueStorage.get(codeHash);
+  public ReadonlyDataSource<Hash, BytesValue> getCodeSource() {
+    return new CodecSource.KeyOnly<>(keyValueStorage, k -> k);
   }
 
   @Override
-  public Optional<BytesValue> getAccountStateTrieNode(final Bytes32 nodeHash) {
-    return keyValueStorage.get(nodeHash);
+  public ReadonlyDataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource() {
+    return new CodecSource.KeyOnly<>(keyValueStorage, k -> k);
   }
 
   @Override
-  public Optional<BytesValue> getAccountStorageTrieNode(final Bytes32 nodeHash) {
-    return keyValueStorage.get(nodeHash);
+  public ReadonlyDataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource() {
+    return new CodecSource.KeyOnly<>(keyValueStorage, k -> k);
   }
 
   @Override
   public Updater updater() {
-    return new Updater(keyValueStorage.getStartTransaction());
+    return new Updater(keyValueStorage);
   }
 
-  public static class Updater implements WorldStateStorage.Updater {
+  public class Updater implements WorldStateStorage.Updater {
 
-    private final KeyValueStorage.Transaction transaction;
+    private final DataSource<BytesValue, BytesValue> source;
+    private WriteCacheDataSource<BytesValue, BytesValue> writeCache;
 
-    public Updater(final KeyValueStorage.Transaction transaction) {
-      this.transaction = transaction;
+    private Updater(final DataSource<BytesValue, BytesValue> source) {
+      this.source = source;
+      recreateWriteCache();
+    }
+
+    private void recreateWriteCache() {
+      writeCache = new WriteCacheImpl<>(source);
     }
 
     @Override
-    public void putCode(final BytesValue code) {
-      transaction.put(Hash.hash(code), code);
+    public DataSource<Hash, BytesValue> getCodeSource() {
+      return new CodecSource.KeyOnly<>(writeCache, k -> k);
     }
 
     @Override
-    public void putAccountStateTrieNode(final Bytes32 nodeHash, final BytesValue node) {
-      transaction.put(nodeHash, node);
+    public DataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource() {
+      return new CodecSource.KeyOnly<>(writeCache, k -> k);
     }
 
     @Override
-    public void putAccountStorageTrieNode(final Bytes32 nodeHash, final BytesValue node) {
-      transaction.put(nodeHash, node);
+    public DataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource() {
+      return new CodecSource.KeyOnly<>(writeCache, k -> k);
     }
 
     @Override
     public void commit() {
-      transaction.commit();
+      writeCache.commit();
     }
 
     @Override
     public void rollback() {
-      transaction.rollback();
+      recreateWriteCache();
     }
   }
 }

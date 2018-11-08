@@ -16,12 +16,17 @@ import static tech.pegasys.pantheon.crypto.Hash.keccak256;
 
 import tech.pegasys.pantheon.ethereum.rlp.RLP;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
+import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.source.DataSource;
+import tech.pegasys.pantheon.util.source.LinkedDataSource;
 
 import java.util.Map;
 import java.util.Optional;
 
-/** An Merkle Patricial Trie. */
-public interface MerklePatriciaTrie<K, V> {
+/**
+ * An Merkle Patricial Trie.
+ */
+public interface MerklePatriciaTrie<K extends BytesValue, V> extends LinkedDataSource<K, V, Bytes32, BytesValue> {
 
   Bytes32 EMPTY_TRIE_ROOT_HASH = keccak256(RLP.NULL);
 
@@ -37,7 +42,7 @@ public interface MerklePatriciaTrie<K, V> {
    * Updates the value mapped to the specified key, creating the mapping if one does not already
    * exist.
    *
-   * @param key The key that corresponds to the value to be updated.
+   * @param key   The key that corresponds to the value to be updated.
    * @param value The value to associate the key with.
    */
   void put(K key, V value);
@@ -58,17 +63,15 @@ public interface MerklePatriciaTrie<K, V> {
 
   /**
    * Commits any pending changes to the underlying storage.
-   *
-   * @param nodeUpdater used to store the node values
    */
-  void commit(NodeUpdater nodeUpdater);
+  void commit();
 
   /**
    * Retrieve up to {@code limit} storage entries beginning from the first entry with hash equal to
    * or greater than {@code startKeyHash}.
    *
    * @param startKeyHash the first key hash to return.
-   * @param limit the maximum number of entries to return.
+   * @param limit        the maximum number of entries to return.
    * @return the requested storage entries as a map of key hash to value.
    */
   Map<Bytes32, V> entriesFrom(Bytes32 startKeyHash, int limit);

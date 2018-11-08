@@ -17,6 +17,7 @@ import static tech.pegasys.pantheon.ethereum.trie.CompactEncoding.bytesToPath;
 
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.source.DataSource;
 
 import java.util.Map;
 import java.util.Optional;
@@ -74,8 +75,13 @@ public class SimpleMerklePatriciaTrie<K extends BytesValue, V> implements Merkle
   }
 
   @Override
-  public void commit(final NodeUpdater nodeUpdater) {
+  public void commit() {
     // Nothing to do here
+  }
+
+  @Override
+  public DataSource<Bytes32, BytesValue> getUpstream() {
+    throw new UnsupportedOperationException();
   }
 
   @Override
