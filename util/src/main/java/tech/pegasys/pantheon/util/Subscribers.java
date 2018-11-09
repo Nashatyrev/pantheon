@@ -42,8 +42,24 @@ public class Subscribers<T> {
   private final AtomicLong subscriberId = new AtomicLong();
   private final Map<Long, T> subscribers = new ConcurrentHashMap<>();
 
+  public interface Subscription {
+
+    void cancel();
+
+    boolean isActive();
+
+    /**
+     * Subscription may be cancelled by 'remote side'.
+     * E.g. if one subscribed to specific peer events but the peer eventually disconnects
+     */
+    void onCancel(Consumer<Subscription> subscriptionCancelListener);
+  }
+
   /**
    * Add a subscriber to the list.
+   *
+   *
+   * NOTE: may be return Subscription here?
    *
    * @param subscriber the subscriber to add
    * @return the ID assigned to this subscriber

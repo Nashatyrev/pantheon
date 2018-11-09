@@ -30,6 +30,8 @@ import java.util.stream.Stream;
  * A simple extension of {@link DefaultMutableWorldState} that tracks in memory the mapping of hash
  * to address for its accounts for debugging purposes. It also provides a full toString() method
  * that display the content of the world state. It is obviously only mean for testing or debugging.
+ *
+ * NOTE: may be move this class to tests ?
  */
 public class DebuggableMutableWorldState extends DefaultMutableWorldState {
 
