@@ -24,68 +24,50 @@ import java.util.function.Function;
 public class KeyValueStorageWorldStateStorage implements WorldStateStorage {
 
   private final DataSource<BytesValue, BytesValue> keyValueStorage;
+  private WriteCacheDataSource<BytesValue, BytesValue> writeCache;
+  private final boolean commitSource;
 
   public KeyValueStorageWorldStateStorage(final DataSource<BytesValue, BytesValue> keyValueStorage) {
+    this(keyValueStorage, false);
+  }
+
+  public KeyValueStorageWorldStateStorage(final DataSource<BytesValue, BytesValue> keyValueStorage,
+                                          final boolean commitSource) {
     this.keyValueStorage = keyValueStorage;
+    this.commitSource = commitSource;
+    recreateWriteCache();
   }
 
   @Override
-  public ReadonlyDataSource<Hash, BytesValue> getCodeSource() {
-    return new CodecSource.KeyOnly<>(keyValueStorage, k -> k);
+  public DataSource<Hash, BytesValue> getCodeSource() {
+    return new CodecSource.KeyOnly<>(writeCache, k -> k);
   }
 
   @Override
-  public ReadonlyDataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource() {
-    return new CodecSource.KeyOnly<>(keyValueStorage, k -> k);
+  public DataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource() {
+    return new CodecSource.KeyOnly<>(writeCache, k -> k);
   }
 
   @Override
-  public ReadonlyDataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource() {
-    return new CodecSource.KeyOnly<>(keyValueStorage, k -> k);
+  public DataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource() {
+    return new CodecSource.KeyOnly<>(writeCache, k -> k);
   }
 
   @Override
-  public Updater updater() {
-    return new Updater(keyValueStorage);
-  }
-
-  public class Updater implements WorldStateStorage.Updater {
-
-    private final DataSource<BytesValue, BytesValue> source;
-    private WriteCacheDataSource<BytesValue, BytesValue> writeCache;
-
-    private Updater(final DataSource<BytesValue, BytesValue> source) {
-      this.source = source;
-      recreateWriteCache();
-    }
-
-    private void recreateWriteCache() {
-      writeCache = new WriteCacheImpl<>(source);
-    }
-
-    @Override
-    public DataSource<Hash, BytesValue> getCodeSource() {
-      return new CodecSource.KeyOnly<>(writeCache, k -> k);
-    }
-
-    @Override
-    public DataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource() {
-      return new CodecSource.KeyOnly<>(writeCache, k -> k);
-    }
-
-    @Override
-    public DataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource() {
-      return new CodecSource.KeyOnly<>(writeCache, k -> k);
-    }
-
-    @Override
-    public void commit() {
-      writeCache.commit();
-    }
-
-    @Override
-    public void rollback() {
-      recreateWriteCache();
+  public void commit() {
+    writeCache.commit();
+    if (commitSource) {
+      keyValueStorage.commit();
     }
   }
+
+  @Override
+  public void rollback() {
+    recreateWriteCache();
+  }
+
+  private void recreateWriteCache() {
+    this.writeCache = new WriteCacheImpl<>(keyValueStorage);
+  }
+
 }

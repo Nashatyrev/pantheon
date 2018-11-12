@@ -47,7 +47,6 @@ public class DefaultMutableWorldState implements MutableWorldState {
       new HashMap<>();
   private final Map<Address, BytesValue> updatedAccountCode = new HashMap<>();
   private final WorldStateStorage worldStateStorage;
-  private final WorldStateStorage.Updater worldStateStorageUpdater;
 
 
   public DefaultMutableWorldState(final WorldStateStorage storage) {
@@ -57,7 +56,6 @@ public class DefaultMutableWorldState implements MutableWorldState {
   public DefaultMutableWorldState(
       final Bytes32 rootHash, final WorldStateStorage worldStateStorage) {
     this.worldStateStorage = worldStateStorage;
-    this.worldStateStorageUpdater = worldStateStorage.updater();
     this.accountStateTrie = newAccountStateTrie(rootHash);
   }
 
@@ -71,18 +69,17 @@ public class DefaultMutableWorldState implements MutableWorldState {
 
     final DefaultMutableWorldState other = (DefaultMutableWorldState) worldState;
     this.worldStateStorage = other.worldStateStorage;
-    this.worldStateStorageUpdater = other.worldStateStorage.updater();
     this.accountStateTrie = newAccountStateTrie(other.accountStateTrie.getRootHash());
   }
 
   private MerklePatriciaTrie<Bytes32, BytesValue> newAccountStateTrie(final Bytes32 rootHash) {
     return new StoredMerklePatriciaTrie<>(
-        worldStateStorageUpdater.getAccountStateTrieNodeSource(), rootHash, b -> b, b -> b);
+        worldStateStorage.getAccountStateTrieNodeSource(), rootHash, b -> b, b -> b);
   }
 
   private MerklePatriciaTrie<Bytes32, BytesValue> newAccountStorageTrie(final Bytes32 rootHash) {
     return new StoredMerklePatriciaTrie<>(
-        worldStateStorageUpdater.getAccountStorageTrieNodeSource(), rootHash, b -> b, b -> b);
+        worldStateStorage.getAccountStorageTrieNodeSource(), rootHash, b -> b, b -> b);
   }
 
   @Override
@@ -165,7 +162,7 @@ public class DefaultMutableWorldState implements MutableWorldState {
   public void persist() {
     // Store updated code
     for (final BytesValue code : updatedAccountCode.values()) {
-      worldStateStorageUpdater.getCodeSource().put(Hash.hash(code), code);
+      worldStateStorage.getCodeSource().put(Hash.hash(code), code);
     }
     // Commit account storage tries
     for (final MerklePatriciaTrie<Bytes32, BytesValue> updatedStorage :
@@ -180,7 +177,7 @@ public class DefaultMutableWorldState implements MutableWorldState {
     updatedAccountCode.clear();
 
     // Push changes to underlying storage
-    worldStateStorageUpdater.commit();
+    worldStateStorage.commit();
   }
 
   // An immutable class that represents an individual account as stored in

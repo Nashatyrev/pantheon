@@ -22,24 +22,14 @@ import java.util.Optional;
 
 public interface WorldStateStorage {
 
-  ReadonlyDataSource<Hash, BytesValue> getCodeSource();
+  DataSource<Hash, BytesValue> getCodeSource();
 
-  ReadonlyDataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource();
+  DataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource();
 
-  ReadonlyDataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource();
+  DataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource();
 
-  Updater updater();
+  void commit();
 
-  interface Updater {
+  void rollback();
 
-    DataSource<Hash, BytesValue> getCodeSource();
-
-    DataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource();
-
-    DataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource();
-
-    void commit();
-
-    void rollback();
-  }
 }
