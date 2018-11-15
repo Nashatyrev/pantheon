@@ -35,6 +35,8 @@ import org.rocksdb.TransactionDB;
 import org.rocksdb.TransactionDBOptions;
 import org.rocksdb.WriteOptions;
 
+import javax.annotation.Nonnull;
+
 public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
 
   private static final Logger LOG = LogManager.getLogger();
@@ -63,7 +65,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
   }
 
   @Override
-  public Optional<BytesValue> get(final BytesValue key) throws StorageException {
+  public Optional<BytesValue> get(@Nonnull final BytesValue key) throws StorageException {
     throwIfClosed();
     try {
       return Optional.ofNullable(db.get(key.extractArray())).map(BytesValue::wrap);
@@ -73,7 +75,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
   }
 
   @Override
-  public void put(final BytesValue key, final BytesValue value) throws StorageException {
+  public void put(@Nonnull final BytesValue key, @Nonnull final BytesValue value) throws StorageException {
     throwIfClosed();
     try {
       db.put(key.extractArray(), value.extractArray());
@@ -83,7 +85,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
   }
 
   @Override
-  public void remove(final BytesValue key) throws StorageException {
+  public void remove(@Nonnull final BytesValue key) throws StorageException {
     throwIfClosed();
     try {
       db.delete(key.extractArray());

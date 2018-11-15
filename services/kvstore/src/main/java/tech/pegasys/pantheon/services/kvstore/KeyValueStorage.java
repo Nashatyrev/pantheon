@@ -17,6 +17,7 @@ import static com.google.common.base.Preconditions.checkState;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.source.DataSource;
 
+import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,20 +31,20 @@ public interface KeyValueStorage
    * @param key Index into persistent data repository.
    * @return The value persisted at the key index.
    */
-  Optional<BytesValue> get(BytesValue key) throws StorageException;
+  Optional<BytesValue> get(@Nonnull BytesValue key) throws StorageException;
 
   /**
    * @param key Index into persistent data repository.
    * @param value The value persisted at the key index.
    */
-  void put(BytesValue key, BytesValue value) throws StorageException;
+  void put(@Nonnull BytesValue key, @Nonnull BytesValue value) throws StorageException;
 
   /**
    * Remove the data corresponding to the given key.
    *
    * @param key Index into persistent data repository.
    */
-  void remove(BytesValue key) throws StorageException;
+  void remove(@Nonnull BytesValue key) throws StorageException;
 
   /**
    * Begins a transaction. Returns a transaction object that can be updated and committed.

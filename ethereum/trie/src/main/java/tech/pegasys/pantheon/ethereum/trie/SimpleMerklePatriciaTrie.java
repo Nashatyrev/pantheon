@@ -19,6 +19,7 @@ import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.source.DataSource;
 
+import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -46,20 +47,20 @@ public class SimpleMerklePatriciaTrie<K extends BytesValue, V> implements Merkle
   }
 
   @Override
-  public Optional<V> get(final K key) {
+  public Optional<V> get(@Nonnull final K key) {
     checkNotNull(key);
     return root.accept(getVisitor, bytesToPath(key)).getValue();
   }
 
   @Override
-  public void put(final K key, final V value) {
+  public void put(@Nonnull final K key, @Nonnull final V value) {
     checkNotNull(key);
     checkNotNull(value);
     this.root = root.accept(new PutVisitor<>(nodeFactory, value), bytesToPath(key));
   }
 
   @Override
-  public void remove(final K key) {
+  public void remove(@Nonnull final K key) {
     checkNotNull(key);
     this.root = root.accept(removeVisitor, bytesToPath(key));
   }
@@ -79,6 +80,7 @@ public class SimpleMerklePatriciaTrie<K extends BytesValue, V> implements Merkle
     // Nothing to do here
   }
 
+  @Nonnull
   @Override
   public DataSource<Bytes32, BytesValue> getUpstream() {
     throw new UnsupportedOperationException();

@@ -14,6 +14,7 @@ package tech.pegasys.pantheon.services.kvstore;
 
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class InMemoryKeyValueStorage implements KeyValueStorage {
   private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
   @Override
-  public Optional<BytesValue> get(final BytesValue key) {
+  public Optional<BytesValue> get(@Nonnull final BytesValue key) {
     final Lock lock = rwLock.readLock();
     try {
       lock.lock();
@@ -42,7 +43,7 @@ public class InMemoryKeyValueStorage implements KeyValueStorage {
   }
 
   @Override
-  public void put(final BytesValue key, final BytesValue value) {
+  public void put(@Nonnull final BytesValue key, @Nonnull final BytesValue value) {
     final Lock lock = rwLock.writeLock();
     try {
       lock.lock();
@@ -53,7 +54,7 @@ public class InMemoryKeyValueStorage implements KeyValueStorage {
   }
 
   @Override
-  public void remove(final BytesValue key) throws StorageException {
+  public void remove(@Nonnull final BytesValue key) throws StorageException {
     final Lock lock = rwLock.writeLock();
     try {
       lock.lock();

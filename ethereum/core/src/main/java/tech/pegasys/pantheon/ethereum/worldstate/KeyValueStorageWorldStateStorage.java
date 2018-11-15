@@ -13,18 +13,14 @@
 package tech.pegasys.pantheon.ethereum.worldstate;
 
 import tech.pegasys.pantheon.ethereum.core.Hash;
-import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.source.*;
 
-import java.util.Optional;
-import java.util.function.Function;
-
 public class KeyValueStorageWorldStateStorage implements WorldStateStorage {
 
   private final DataSource<BytesValue, BytesValue> keyValueStorage;
-  private WriteCacheDataSource<BytesValue, BytesValue> writeCache;
+  private CacheDataSource<BytesValue, BytesValue> writeCache;
   private final boolean commitSource;
 
   public KeyValueStorageWorldStateStorage(final DataSource<BytesValue, BytesValue> keyValueStorage) {

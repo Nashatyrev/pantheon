@@ -1,31 +1,32 @@
 package tech.pegasys.pantheon.util.source;
 
+import javax.annotation.Nonnull;
 import java.util.Optional;
 
 /**
- * This is mock implementation
+ * This is stub implementation
  *
  * Created by Anton Nashatyrev on 12.11.2018.
  */
 public class WriteCacheImpl<K, V> extends AbstractLinkedDataSource<K,V,K,V>
-    implements WriteCacheDataSource<K, V> {
+    implements CacheDataSource<K, V> {
 
   public WriteCacheImpl(final DataSource<K, V> upstreamSource) {
     super(upstreamSource);
   }
 
   @Override
-  public Optional<V> get(final K key) {
+  public Optional<V> get(@Nonnull final K key) {
     return Optional.empty();
   }
 
   @Override
-  public void put(final K key, final V value) {
+  public void put(@Nonnull final K key, @Nonnull final V value) {
 
   }
 
   @Override
-  public void remove(final K key) {
+  public void remove(@Nonnull final K key) {
 
   }
 
@@ -35,12 +36,7 @@ public class WriteCacheImpl<K, V> extends AbstractLinkedDataSource<K,V,K,V>
   }
 
   @Override
-  public int getCachedEntriesCount() {
-    return 0;
-  }
-
-  @Override
-  public Optional<Optional<V>> getCacheEntry(final K key) {
+  public Optional<Optional<V>> getCacheEntry(@Nonnull final K key) {
     return Optional.empty();
   }
 }
