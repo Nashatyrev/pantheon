@@ -65,7 +65,7 @@ public interface MerklePatriciaTrie<K extends BytesValue, V> extends LinkedDataS
   /**
    * Commits any pending changes to the underlying storage.
    */
-  void commit();
+  void flush();
 
   /**
    * Retrieve up to {@code limit} storage entries beginning from the first entry with hash equal to

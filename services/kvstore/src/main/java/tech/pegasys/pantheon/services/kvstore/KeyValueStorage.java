@@ -53,7 +53,7 @@ public interface KeyValueStorage
    */
   Transaction getStartTransaction() throws StorageException;
 
-  default void commit() {};
+  default void flush() {};
 
   /**
    * Stream all stored key-value pairs.

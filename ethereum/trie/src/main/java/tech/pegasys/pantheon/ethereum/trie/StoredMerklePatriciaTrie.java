@@ -95,7 +95,7 @@ public class StoredMerklePatriciaTrie<K extends BytesValue, V>
   }
 
   @Override
-  public void doCommit() {
+  public void doFlush() {
     final CommitVisitor<V> commitVisitor = new CommitVisitor<>(
         (hash, value) -> getUpstream().put(hash, value));
     root.accept(commitVisitor);

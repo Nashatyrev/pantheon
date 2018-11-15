@@ -76,7 +76,7 @@ public class SimpleMerklePatriciaTrie<K extends BytesValue, V> implements Merkle
   }
 
   @Override
-  public void commit() {
+  public void flush() {
     // Nothing to do here
   }
 

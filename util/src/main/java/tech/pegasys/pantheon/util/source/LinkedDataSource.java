@@ -9,7 +9,7 @@ import javax.annotation.Nonnull;
  *
  * Upstream source generally acts as data originator on data queries
  * All updates are generally forwarded to the upstream source either
- * immediately or on <code>commit()</code> invocation
+ * immediately or on <code>flush()</code> invocation
  */
 public interface LinkedDataSource<KeyType, ValueType, UpKeyType, UpValueType>
     extends DataSource<KeyType, ValueType> {

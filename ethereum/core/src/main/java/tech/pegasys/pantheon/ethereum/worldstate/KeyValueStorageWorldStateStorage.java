@@ -51,9 +51,9 @@ public class KeyValueStorageWorldStateStorage implements WorldStateStorage {
 
   @Override
   public void commit() {
-    writeCache.commit();
+    writeCache.flush();
     if (commitSource) {
-      keyValueStorage.commit();
+      keyValueStorage.flush();
     }
   }
 

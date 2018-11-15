@@ -10,7 +10,7 @@ import java.util.Optional;
  * The implementation could either:
  *   - propagate all updates immediately to the underlying storage
  *   - accumulate updates internally
- * In the latter case class should implement commit/revert semantics
+ * In the latter case class should implement flush semantics
  */
 public interface DataSource<KeyType, ValueType> extends ReadonlyDataSource<KeyType, ValueType> {
 
@@ -43,18 +43,5 @@ public interface DataSource<KeyType, ValueType> extends ReadonlyDataSource<KeyTy
    * If all updates are immediately propagated to the underlying
    * storage this method should do nothing.
    */
-  // I would return original method name: flush()
-  // commit() is more about transactions, atomicity and isolation
-  // all these properties are not generally applies to this method
-  // transactional behavior can be added (if needed) with higher level classes
-  void commit();
-
-  /**
-   * If the implementation class accumulates any updates this method
-   * should discard all updates.
-   */
-  default void rollback() {
-    // normally this method is obsolete since discarding changes can be achieved
-    // just by throwing away underlying SourceCache
-  }
+  void flush();
 }

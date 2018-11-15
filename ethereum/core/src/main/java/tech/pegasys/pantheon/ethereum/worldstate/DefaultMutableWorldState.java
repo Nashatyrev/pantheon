@@ -167,10 +167,10 @@ public class DefaultMutableWorldState implements MutableWorldState {
     // Commit account storage tries
     for (final MerklePatriciaTrie<Bytes32, BytesValue> updatedStorage :
         updatedStorageTries.values()) {
-      updatedStorage.commit();
+      updatedStorage.flush();
     }
     // Commit account updates
-    accountStateTrie.commit();
+    accountStateTrie.flush();
 
     // Clear pending changes that we just flushed
     updatedStorageTries.clear();

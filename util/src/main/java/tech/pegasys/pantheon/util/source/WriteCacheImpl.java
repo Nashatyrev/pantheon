@@ -31,7 +31,7 @@ public class WriteCacheImpl<K, V> extends AbstractLinkedDataSource<K,V,K,V>
   }
 
   @Override
-  public void doCommit() {
+  public void doFlush() {
 
   }
 
