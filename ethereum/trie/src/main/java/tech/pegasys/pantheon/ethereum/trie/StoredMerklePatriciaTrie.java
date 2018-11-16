@@ -17,17 +17,23 @@ import static tech.pegasys.pantheon.ethereum.trie.CompactEncoding.bytesToPath;
 
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.source.AbstractLinkedDataSource;
+import tech.pegasys.pantheon.util.source.DataSource;
 
+import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * A {@link MerklePatriciaTrie} that persists trie nodes to a {@link MerkleStorage} key/value store.
+ * A {@link MerklePatriciaTrie} that persists trie nodes to a key/value store.
  *
  * @param <V> The type of values stored by this trie.
  */
-public class StoredMerklePatriciaTrie<K extends BytesValue, V> implements MerklePatriciaTrie<K, V> {
+public class StoredMerklePatriciaTrie<K extends BytesValue, V>
+    extends AbstractLinkedDataSource<K, V, Bytes32, BytesValue>
+    implements MerklePatriciaTrie<K, V> {
+
   private final GetVisitor<V> getVisitor = new GetVisitor<>();
   private final RemoveVisitor<V> removeVisitor = new RemoveVisitor<>();
   private final StoredNodeFactory<V> nodeFactory;
@@ -36,33 +42,33 @@ public class StoredMerklePatriciaTrie<K extends BytesValue, V> implements Merkle
 
   /**
    * Create a trie.
-   *
-   * @param nodeLoader The {@link NodeLoader} to retrieve node data from.
    * @param valueSerializer A function for serializing values to bytes.
    * @param valueDeserializer A function for deserializing values from bytes.
+   * @param upstreamSource Trie backing storage
    */
   public StoredMerklePatriciaTrie(
-      final NodeLoader nodeLoader,
+      final DataSource<Bytes32, BytesValue> upstreamSource,
       final Function<V, BytesValue> valueSerializer,
       final Function<BytesValue, V> valueDeserializer) {
-    this(nodeLoader, MerklePatriciaTrie.EMPTY_TRIE_ROOT_HASH, valueSerializer, valueDeserializer);
+    this(upstreamSource, MerklePatriciaTrie.EMPTY_TRIE_ROOT_HASH, valueSerializer, valueDeserializer);
   }
 
   /**
    * Create a trie.
    *
-   * @param nodeLoader The {@link NodeLoader} to retrieve node data from.
+   * @param upstreamSource Trie backing storage
    * @param rootHash The initial root has for the trie, which should be already present in {@code
    *     storage}.
    * @param valueSerializer A function for serializing values to bytes.
    * @param valueDeserializer A function for deserializing values from bytes.
    */
   public StoredMerklePatriciaTrie(
-      final NodeLoader nodeLoader,
+      final DataSource<Bytes32, BytesValue> upstreamSource,
       final Bytes32 rootHash,
       final Function<V, BytesValue> valueSerializer,
       final Function<BytesValue, V> valueDeserializer) {
-    this.nodeFactory = new StoredNodeFactory<>(nodeLoader, valueSerializer, valueDeserializer);
+    super(upstreamSource);
+    this.nodeFactory = new StoredNodeFactory<>(upstreamSource, valueSerializer, valueDeserializer);
     this.root =
         rootHash.equals(MerklePatriciaTrie.EMPTY_TRIE_ROOT_HASH)
             ? NullNode.instance()
@@ -70,31 +76,32 @@ public class StoredMerklePatriciaTrie<K extends BytesValue, V> implements Merkle
   }
 
   @Override
-  public Optional<V> get(final K key) {
+  public Optional<V> get(@Nonnull final K key) {
     checkNotNull(key);
     return root.accept(getVisitor, bytesToPath(key)).getValue();
   }
 
   @Override
-  public void put(final K key, final V value) {
+  public void put(@Nonnull final K key, @Nonnull final V value) {
     checkNotNull(key);
     checkNotNull(value);
     this.root = root.accept(new PutVisitor<>(nodeFactory, value), bytesToPath(key));
   }
 
   @Override
-  public void remove(final K key) {
+  public void remove(@Nonnull final K key) {
     checkNotNull(key);
     this.root = root.accept(removeVisitor, bytesToPath(key));
   }
 
   @Override
-  public void commit(final NodeUpdater nodeUpdater) {
-    final CommitVisitor<V> commitVisitor = new CommitVisitor<>(nodeUpdater);
+  public void doFlush() {
+    final CommitVisitor<V> commitVisitor = new CommitVisitor<>(
+        (hash, value) -> getUpstream().put(hash, value));
     root.accept(commitVisitor);
     // Make sure root node was stored
     if (root.isDirty() && root.getRlpRef().size() < 32) {
-      nodeUpdater.store(root.getHash(), root.getRlpRef());
+      getUpstream().put(root.getHash(), root.getRlpRef());
     }
     // Reset root so dirty nodes can be garbage collected
     final Bytes32 rootHash = root.getHash();

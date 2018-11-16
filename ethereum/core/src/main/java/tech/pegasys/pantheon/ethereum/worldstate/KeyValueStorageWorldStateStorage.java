@@ -13,71 +13,57 @@
 package tech.pegasys.pantheon.ethereum.worldstate;
 
 import tech.pegasys.pantheon.ethereum.core.Hash;
-import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
-
-import java.util.Optional;
+import tech.pegasys.pantheon.util.source.*;
 
 public class KeyValueStorageWorldStateStorage implements WorldStateStorage {
 
-  private final KeyValueStorage keyValueStorage;
+  private final DataSource<BytesValue, BytesValue> keyValueStorage;
+  private CacheDataSource<BytesValue, BytesValue> writeCache;
+  private final boolean commitSource;
 
-  public KeyValueStorageWorldStateStorage(final KeyValueStorage keyValueStorage) {
+  public KeyValueStorageWorldStateStorage(final DataSource<BytesValue, BytesValue> keyValueStorage) {
+    this(keyValueStorage, false);
+  }
+
+  public KeyValueStorageWorldStateStorage(final DataSource<BytesValue, BytesValue> keyValueStorage,
+                                          final boolean commitSource) {
     this.keyValueStorage = keyValueStorage;
+    this.commitSource = commitSource;
+    recreateWriteCache();
   }
 
   @Override
-  public Optional<BytesValue> getCode(final Hash codeHash) {
-    return keyValueStorage.get(codeHash);
+  public DataSource<Hash, BytesValue> getCodeSource() {
+    return new CodecSource.KeyOnly<>(writeCache, k -> k);
   }
 
   @Override
-  public Optional<BytesValue> getAccountStateTrieNode(final Bytes32 nodeHash) {
-    return keyValueStorage.get(nodeHash);
+  public DataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource() {
+    return new CodecSource.KeyOnly<>(writeCache, k -> k);
   }
 
   @Override
-  public Optional<BytesValue> getAccountStorageTrieNode(final Bytes32 nodeHash) {
-    return keyValueStorage.get(nodeHash);
+  public DataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource() {
+    return new CodecSource.KeyOnly<>(writeCache, k -> k);
   }
 
   @Override
-  public Updater updater() {
-    return new Updater(keyValueStorage.getStartTransaction());
-  }
-
-  public static class Updater implements WorldStateStorage.Updater {
-
-    private final KeyValueStorage.Transaction transaction;
-
-    public Updater(final KeyValueStorage.Transaction transaction) {
-      this.transaction = transaction;
-    }
-
-    @Override
-    public void putCode(final BytesValue code) {
-      transaction.put(Hash.hash(code), code);
-    }
-
-    @Override
-    public void putAccountStateTrieNode(final Bytes32 nodeHash, final BytesValue node) {
-      transaction.put(nodeHash, node);
-    }
-
-    @Override
-    public void putAccountStorageTrieNode(final Bytes32 nodeHash, final BytesValue node) {
-      transaction.put(nodeHash, node);
-    }
-
-    @Override
-    public void commit() {
-      transaction.commit();
-    }
-
-    @Override
-    public void rollback() {
-      transaction.rollback();
+  public void commit() {
+    writeCache.flush();
+    if (commitSource) {
+      keyValueStorage.flush();
     }
   }
+
+  @Override
+  public void rollback() {
+    recreateWriteCache();
+  }
+
+  private void recreateWriteCache() {
+    this.writeCache = new WriteCacheImpl<>(keyValueStorage);
+  }
+
 }

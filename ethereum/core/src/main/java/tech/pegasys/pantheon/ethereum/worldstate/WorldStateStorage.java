@@ -15,29 +15,21 @@ package tech.pegasys.pantheon.ethereum.worldstate;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.source.DataSource;
+import tech.pegasys.pantheon.util.source.ReadonlyDataSource;
 
 import java.util.Optional;
 
 public interface WorldStateStorage {
 
-  Optional<BytesValue> getCode(Hash codeHash);
+  DataSource<Hash, BytesValue> getCodeSource();
 
-  Optional<BytesValue> getAccountStateTrieNode(Bytes32 nodeHash);
+  DataSource<Bytes32, BytesValue> getAccountStateTrieNodeSource();
 
-  Optional<BytesValue> getAccountStorageTrieNode(Bytes32 nodeHash);
+  DataSource<Bytes32, BytesValue> getAccountStorageTrieNodeSource();
 
-  Updater updater();
+  void commit();
 
-  interface Updater {
+  void rollback();
 
-    void putCode(BytesValue code);
-
-    void putAccountStateTrieNode(Bytes32 nodeHash, BytesValue node);
-
-    void putAccountStorageTrieNode(Bytes32 nodeHash, BytesValue node);
-
-    void commit();
-
-    void rollback();
-  }
 }

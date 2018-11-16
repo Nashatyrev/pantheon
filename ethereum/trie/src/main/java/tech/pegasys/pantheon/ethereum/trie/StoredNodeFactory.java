@@ -19,6 +19,7 @@ import tech.pegasys.pantheon.ethereum.rlp.RLPException;
 import tech.pegasys.pantheon.ethereum.rlp.RLPInput;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.source.ReadonlyDataSource;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,12 +31,12 @@ class StoredNodeFactory<V> implements NodeFactory<V> {
   @SuppressWarnings("rawtypes")
   private static final NullNode NULL_NODE = NullNode.instance();
 
-  private final NodeLoader nodeLoader;
+  private final ReadonlyDataSource<Bytes32, BytesValue> nodeLoader;
   private final Function<V, BytesValue> valueSerializer;
   private final Function<BytesValue, V> valueDeserializer;
 
   StoredNodeFactory(
-      final NodeLoader nodeLoader,
+      final ReadonlyDataSource<Bytes32, BytesValue> nodeLoader,
       final Function<V, BytesValue> valueSerializer,
       final Function<BytesValue, V> valueDeserializer) {
     this.nodeLoader = nodeLoader;
@@ -89,7 +90,7 @@ class StoredNodeFactory<V> implements NodeFactory<V> {
 
   public Node<V> retrieve(final Bytes32 hash) throws MerkleStorageException {
     return nodeLoader
-        .getNode(hash)
+        .get(hash)
         .map(
             rlp -> {
               final Node<V> node = decode(rlp, () -> format("Invalid RLP value for hash %s", hash));
