@@ -65,8 +65,8 @@ public class InMemoryKeyValueStorage implements KeyValueStorage {
   }
 
   @Override
-  public Transaction getStartTransaction() {
-    return new InMemoryTransaction();
+  public void flush() {
+    // nothing to do
   }
 
   @Override
@@ -88,42 +88,4 @@ public class InMemoryKeyValueStorage implements KeyValueStorage {
 
   @Override
   public void close() {}
-
-  private class InMemoryTransaction extends AbstractTransaction {
-
-    private Map<BytesValue, BytesValue> updatedValues = new HashMap<>();
-    private Set<BytesValue> removedKeys = new HashSet<>();
-
-    @Override
-    protected void doPut(final BytesValue key, final BytesValue value) {
-      updatedValues.put(key, value);
-      removedKeys.remove(key);
-    }
-
-    @Override
-    protected void doRemove(final BytesValue key) {
-      removedKeys.add(key);
-      updatedValues.remove(key);
-    }
-
-    @Override
-    protected void doCommit() {
-      final Lock lock = rwLock.writeLock();
-      try {
-        lock.lock();
-        hashValueStore.putAll(updatedValues);
-        removedKeys.forEach(k -> hashValueStore.remove(k));
-        updatedValues = null;
-        removedKeys = null;
-      } finally {
-        lock.unlock();
-      }
-    }
-
-    @Override
-    protected void doRollback() {
-      updatedValues = null;
-      removedKeys = null;
-    }
-  }
 }

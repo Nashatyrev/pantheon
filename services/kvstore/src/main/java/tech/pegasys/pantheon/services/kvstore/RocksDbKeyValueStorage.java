@@ -12,28 +12,18 @@
  */
 package tech.pegasys.pantheon.services.kvstore;
 
+import org.rocksdb.*;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
 import java.io.Closeable;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.rocksdb.Options;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
-import org.rocksdb.TransactionDB;
-import org.rocksdb.TransactionDBOptions;
-import org.rocksdb.WriteOptions;
 
 import javax.annotation.Nonnull;
 
@@ -44,7 +34,10 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
   private final Options options;
   private final TransactionDBOptions txOptions;
   private final TransactionDB db;
+  private final ReadOptions txReadOptions = new ReadOptions();
+  private final WriteOptions txWriteOptions = new WriteOptions();
   private final AtomicBoolean closed = new AtomicBoolean(false);
+  private org.rocksdb.Transaction currentTransaction = null;
 
   static {
     RocksDB.loadLibrary();
@@ -68,7 +61,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
   public Optional<BytesValue> get(@Nonnull final BytesValue key) throws StorageException {
     throwIfClosed();
     try {
-      return Optional.ofNullable(db.get(key.extractArray())).map(BytesValue::wrap);
+      return Optional.ofNullable(currentTransaction().get(txReadOptions, key.extractArray())).map(BytesValue::wrap);
     } catch (final RocksDBException e) {
       throw new StorageException(e);
     }
@@ -78,7 +71,7 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
   public void put(@Nonnull final BytesValue key, @Nonnull final BytesValue value) throws StorageException {
     throwIfClosed();
     try {
-      db.put(key.extractArray(), value.extractArray());
+      currentTransaction().put(key.extractArray(), value.extractArray());
     } catch (final RocksDBException e) {
       throw new StorageException(e);
     }
@@ -88,20 +81,40 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
   public void remove(@Nonnull final BytesValue key) throws StorageException {
     throwIfClosed();
     try {
-      db.delete(key.extractArray());
+      currentTransaction().delete(key.extractArray());
     } catch (final RocksDBException e) {
       throw new StorageException(e);
     }
   }
 
-  @Override
-  public Transaction getStartTransaction() throws StorageException {
+  private synchronized org.rocksdb.Transaction currentTransaction() throws StorageException {
+    if (currentTransaction == null) {
+      currentTransaction = startTransaction();
+    }
+    return currentTransaction;
+  }
+
+  private org.rocksdb.Transaction startTransaction() throws StorageException {
     throwIfClosed();
-    final WriteOptions options = new WriteOptions();
-    return new RocksDbTransaction(db.beginTransaction(options), options);
+    return db.beginTransaction(txWriteOptions);
   }
 
   @Override
+  public void flush() throws StorageException {
+    final org.rocksdb.Transaction tx;
+    synchronized (this) {
+      if (currentTransaction == null) return;
+      tx = currentTransaction;
+      currentTransaction = null;
+    }
+    try {
+      tx.commit();
+      tx.close();
+    } catch (RocksDBException e) {
+      throw new StorageException(e);
+    }
+  }
+
   public Stream<Entry> entries() {
     throwIfClosed();
     final RocksIterator rocksIt = db.newIterator();
@@ -177,61 +190,6 @@ public class RocksDbKeyValueStorage implements KeyValueStorage, Closeable {
     public void close() {
       rocksIt.close();
       closed = true;
-    }
-  }
-
-  private static class RocksDbTransaction extends AbstractTransaction {
-    private final org.rocksdb.Transaction innerTx;
-    private final WriteOptions options;
-
-    RocksDbTransaction(final org.rocksdb.Transaction innerTx, final WriteOptions options) {
-      this.innerTx = innerTx;
-      this.options = options;
-    }
-
-    @Override
-    protected void doPut(final BytesValue key, final BytesValue value) {
-      try {
-        innerTx.put(key.extractArray(), value.extractArray());
-      } catch (final RocksDBException e) {
-        throw new StorageException(e);
-      }
-    }
-
-    @Override
-    protected void doRemove(final BytesValue key) {
-      try {
-        innerTx.delete(key.extractArray());
-      } catch (final RocksDBException e) {
-        throw new StorageException(e);
-      }
-    }
-
-    @Override
-    protected void doCommit() throws StorageException {
-      try {
-        innerTx.commit();
-      } catch (final RocksDBException e) {
-        throw new StorageException(e);
-      } finally {
-        close();
-      }
-    }
-
-    @Override
-    protected void doRollback() {
-      try {
-        innerTx.rollback();
-      } catch (final RocksDBException e) {
-        throw new StorageException(e);
-      } finally {
-        close();
-      }
-    }
-
-    private void close() {
-      innerTx.close();
-      options.close();
     }
   }
 }
