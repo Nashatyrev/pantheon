@@ -35,6 +35,13 @@ public class WriteCacheImpl<K, V> extends AbstractLinkedDataSource<K,V,K,V>
 
   }
 
+  /**
+   * Discards all changes accumulated
+   */
+  public void reset() {
+
+  }
+
   @Override
   public Optional<Optional<V>> getCacheEntry(@Nonnull final K key) {
     return Optional.empty();

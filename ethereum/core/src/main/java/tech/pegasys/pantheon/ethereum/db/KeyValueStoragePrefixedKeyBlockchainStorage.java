@@ -18,189 +18,142 @@ import tech.pegasys.pantheon.ethereum.core.BlockHashFunction;
 import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.TransactionReceipt;
-import tech.pegasys.pantheon.ethereum.rlp.RLP;
-import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
-import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
-import tech.pegasys.pantheon.util.bytes.BytesValues;
+import tech.pegasys.pantheon.util.source.DataSource;
+import tech.pegasys.pantheon.util.source.WriteCacheImpl;
 import tech.pegasys.pantheon.util.uint.UInt256;
-import tech.pegasys.pantheon.util.uint.UInt256Bytes;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-
-import com.google.common.collect.Lists;
+import java.util.*;
 
 public class KeyValueStoragePrefixedKeyBlockchainStorage implements BlockchainStorage {
 
-  private static final BytesValue CHAIN_HEAD_KEY =
-      BytesValue.wrap("chainHeadHash".getBytes(StandardCharsets.UTF_8));
-  private static final BytesValue FORK_HEADS_KEY =
-      BytesValue.wrap("forkHeads".getBytes(StandardCharsets.UTF_8));
-
-  private static final BytesValue CONSTANTS_PREFIX = BytesValue.of(1);
-  private static final BytesValue BLOCK_HEADER_PREFIX = BytesValue.of(2);
-  private static final BytesValue BLOCK_BODY_PREFIX = BytesValue.of(3);
-  private static final BytesValue TRANSACTION_RECEIPTS_PREFIX = BytesValue.of(4);
-  private static final BytesValue BLOCK_HASH_PREFIX = BytesValue.of(5);
-  private static final BytesValue TOTAL_DIFFICULTY_PREFIX = BytesValue.of(6);
-  private static final BytesValue TRANSACTION_LOCATION_PREFIX = BytesValue.of(7);
-
-  private final KeyValueStorage storage;
+  private final BlockchainSources sources;
+  private final DataSource<BytesValue, BytesValue>  storage;
   private final BlockHashFunction blockHashFunction;
 
   public KeyValueStoragePrefixedKeyBlockchainStorage(
-      final KeyValueStorage storage, final BlockHashFunction blockHashFunction) {
+      final DataSource<BytesValue, BytesValue>  storage, final BlockHashFunction blockHashFunction) {
     this.storage = storage;
     this.blockHashFunction = blockHashFunction;
+    sources = new BlockchainSources(storage, blockHashFunction);
   }
 
   @Override
   public Optional<Hash> getChainHead() {
-    return get(CONSTANTS_PREFIX, CHAIN_HEAD_KEY).map(this::bytesToHash);
+    return sources.getChainHeadValue().get();
   }
 
   @Override
   public Collection<Hash> getForkHeads() {
-    return get(CONSTANTS_PREFIX, FORK_HEADS_KEY)
-        .map(bytes -> RLP.input(bytes).readList(in -> this.bytesToHash(in.readBytes32())))
-        .orElse(Lists.newArrayList());
+    return sources.getForkHeadsValue().get().orElse(Collections.emptyList());
   }
 
   @Override
   public Optional<BlockHeader> getBlockHeader(final Hash blockHash) {
-    return get(BLOCK_HEADER_PREFIX, blockHash)
-        .map(b -> BlockHeader.readFrom(RLP.input(b), blockHashFunction));
+    return sources.getBlockHeaderSource().get(blockHash);
   }
 
   @Override
   public Optional<BlockBody> getBlockBody(final Hash blockHash) {
-    return get(BLOCK_BODY_PREFIX, blockHash)
-        .map(bytesValue -> BlockBody.readFrom(RLP.input(bytesValue), blockHashFunction));
+    return sources.getBlockBodySource().get(blockHash);
   }
 
   @Override
   public Optional<List<TransactionReceipt>> getTransactionReceipts(final Hash blockHash) {
-    return get(TRANSACTION_RECEIPTS_PREFIX, blockHash).map(this::rlpDecodeTransactionReceipts);
+    return sources.getTxReceiptsSource().get(blockHash);
   }
 
   @Override
   public Optional<Hash> getBlockHash(final long blockNumber) {
-    return get(BLOCK_HASH_PREFIX, UInt256Bytes.of(blockNumber)).map(this::bytesToHash);
+    return sources.getBlockHashSource().get(blockNumber);
   }
 
   @Override
   public Optional<UInt256> getTotalDifficulty(final Hash blockHash) {
-    return get(TOTAL_DIFFICULTY_PREFIX, blockHash).map(b -> UInt256.wrap(Bytes32.wrap(b, 0)));
+    return sources.getTotalDifficultySource().get(blockHash);
   }
 
   @Override
   public Optional<TransactionLocation> getTransactionLocation(final Hash transactionHash) {
-    return get(TRANSACTION_LOCATION_PREFIX, transactionHash)
-        .map(bytesValue -> TransactionLocation.readFrom(RLP.input(bytesValue)));
+    return sources.getTxLocationSource().get(transactionHash);
   }
 
   @Override
   public Updater updater() {
-    return new Updater(storage.getStartTransaction());
-  }
-
-  private List<TransactionReceipt> rlpDecodeTransactionReceipts(final BytesValue bytes) {
-    return RLP.input(bytes).readList(TransactionReceipt::readFrom);
-  }
-
-  private Hash bytesToHash(final BytesValue bytesValue) {
-    return Hash.wrap(Bytes32.wrap(bytesValue, 0));
-  }
-
-  private Optional<BytesValue> get(final BytesValue prefix, final BytesValue key) {
-    return storage.get(BytesValues.concatenate(prefix, key));
+    return new Updater(storage, blockHashFunction);
   }
 
   public static class Updater implements BlockchainStorage.Updater {
 
-    private final KeyValueStorage.Transaction transaction;
+    private final BlockchainSources sources;
+    private final WriteCacheImpl<BytesValue, BytesValue> writeCache;
 
-    private Updater(final KeyValueStorage.Transaction transaction) {
-      this.transaction = transaction;
+    private Updater(final DataSource<BytesValue, BytesValue> storage, final BlockHashFunction blockHashFunction) {
+      writeCache = new WriteCacheImpl<>(storage);
+      sources = new BlockchainSources(writeCache, blockHashFunction);
     }
 
     @Override
     public void putBlockHeader(final Hash blockHash, final BlockHeader blockHeader) {
-      set(BLOCK_HEADER_PREFIX, blockHash, RLP.encode(blockHeader::writeTo));
+      sources.getBlockHeaderSource().put(blockHash, blockHeader);
     }
 
     @Override
     public void putBlockBody(final Hash blockHash, final BlockBody blockBody) {
-      set(BLOCK_BODY_PREFIX, blockHash, RLP.encode(blockBody::writeTo));
+      sources.getBlockBodySource().put(blockHash, blockBody);
     }
 
     @Override
     public void putTransactionLocation(
         final Hash transactionHash, final TransactionLocation transactionLocation) {
-      set(TRANSACTION_LOCATION_PREFIX, transactionHash, RLP.encode(transactionLocation::writeTo));
+      sources.getTxLocationSource().put(transactionHash, transactionLocation);
     }
 
     @Override
     public void putTransactionReceipts(
         final Hash blockHash, final List<TransactionReceipt> transactionReceipts) {
-      set(TRANSACTION_RECEIPTS_PREFIX, blockHash, rlpEncode(transactionReceipts));
+      sources.getTxReceiptsSource().put(blockHash, transactionReceipts);
     }
 
     @Override
     public void putBlockHash(final long blockNumber, final Hash blockHash) {
-      set(BLOCK_HASH_PREFIX, UInt256Bytes.of(blockNumber), blockHash);
+      sources.getBlockHashSource().put(blockNumber, blockHash);
     }
 
     @Override
     public void putTotalDifficulty(final Hash blockHash, final UInt256 totalDifficulty) {
-      set(TOTAL_DIFFICULTY_PREFIX, blockHash, totalDifficulty.getBytes());
+      sources.getTotalDifficultySource().put(blockHash, totalDifficulty);
     }
 
     @Override
     public void setChainHead(final Hash blockHash) {
-      set(CONSTANTS_PREFIX, CHAIN_HEAD_KEY, blockHash);
+      sources.getChainHeadValue().set(blockHash);
     }
 
     @Override
     public void setForkHeads(final Collection<Hash> forkHeadHashes) {
-      final BytesValue data =
-          RLP.encode(o -> o.writeList(forkHeadHashes, (val, out) -> out.writeBytesValue(val)));
-      set(CONSTANTS_PREFIX, FORK_HEADS_KEY, data);
+      sources.getForkHeadsValue().set(new ArrayList<>(forkHeadHashes));
     }
 
     @Override
     public void removeBlockHash(final long blockNumber) {
-      remove(BLOCK_HASH_PREFIX, UInt256Bytes.of(blockNumber));
+      sources.getBlockHashSource().remove(blockNumber);
     }
 
     @Override
     public void removeTransactionLocation(final Hash transactionHash) {
-      remove(TRANSACTION_LOCATION_PREFIX, transactionHash);
+      sources.getTxLocationSource().remove(transactionHash);
     }
 
     @Override
     public void commit() {
-      transaction.commit();
+      writeCache.flush();
     }
 
     @Override
     public void rollback() {
-      transaction.rollback();
+      writeCache.reset();
     }
 
-    private void set(final BytesValue prefix, final BytesValue key, final BytesValue value) {
-      transaction.put(BytesValues.concatenate(prefix, key), value);
-    }
-
-    private void remove(final BytesValue prefix, final BytesValue key) {
-      transaction.remove(BytesValues.concatenate(prefix, key));
-    }
-
-    private BytesValue rlpEncode(final List<TransactionReceipt> receipts) {
-      return RLP.encode(o -> o.writeList(receipts, TransactionReceipt::writeTo));
-    }
   }
 }
