@@ -23,13 +23,14 @@ import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.worldstate.DefaultMutableWorldState;
 import tech.pegasys.pantheon.ethereum.worldstate.KeyValueStorageWorldStateStorage;
-import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
-import tech.pegasys.pantheon.services.kvstore.KeyValueStorage;
+import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.source.DataSource;
+import tech.pegasys.pantheon.util.source.impl.HashMapDataSource;
 
 public class ExecutionContextTestFixture {
 
   private final Block genesis;
-  private final KeyValueStorage keyValueStorage;
+  private final DataSource<BytesValue, BytesValue> keyValueStorage;
   private final MutableBlockchain blockchain;
   private final WorldStateArchive stateArchive;
 
@@ -37,7 +38,7 @@ public class ExecutionContextTestFixture {
   private final ProtocolContext<Void> protocolContext;
 
   private ExecutionContextTestFixture(
-      final ProtocolSchedule<Void> protocolSchedule, final KeyValueStorage keyValueStorage) {
+      final ProtocolSchedule<Void> protocolSchedule, final DataSource<BytesValue, BytesValue> keyValueStorage) {
     final GenesisConfig<Void> genesisConfig = GenesisConfig.mainnet();
     this.genesis = genesisConfig.getBlock();
     this.keyValueStorage = keyValueStorage;
@@ -67,7 +68,7 @@ public class ExecutionContextTestFixture {
     return genesis;
   }
 
-  public KeyValueStorage getKeyValueStorage() {
+  public DataSource<BytesValue, BytesValue> getKeyValueStorage() {
     return keyValueStorage;
   }
 
@@ -89,10 +90,10 @@ public class ExecutionContextTestFixture {
 
   public static class Builder {
 
-    private KeyValueStorage keyValueStorage;
+    private DataSource<BytesValue, BytesValue> keyValueStorage;
     private ProtocolSchedule<Void> protocolSchedule;
 
-    public Builder keyValueStorage(final KeyValueStorage keyValueStorage) {
+    public Builder keyValueStorage(final DataSource<BytesValue, BytesValue> keyValueStorage) {
       this.keyValueStorage = keyValueStorage;
       return this;
     }
@@ -107,7 +108,7 @@ public class ExecutionContextTestFixture {
         protocolSchedule = MainnetProtocolSchedule.create(0, 0, 0, 0, 0, 0, 42);
       }
       if (keyValueStorage == null) {
-        keyValueStorage = new InMemoryKeyValueStorage();
+        keyValueStorage = new HashMapDataSource<>();
       }
       return new ExecutionContextTestFixture(protocolSchedule, keyValueStorage);
     }

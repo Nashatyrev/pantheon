@@ -12,41 +12,27 @@
  */
 package tech.pegasys.pantheon.ethereum.chain;
 
-import tech.pegasys.pantheon.ethereum.core.Address;
-import tech.pegasys.pantheon.ethereum.core.Block;
-import tech.pegasys.pantheon.ethereum.core.BlockBody;
-import tech.pegasys.pantheon.ethereum.core.BlockHeader;
-import tech.pegasys.pantheon.ethereum.core.BlockHeaderBuilder;
-import tech.pegasys.pantheon.ethereum.core.Hash;
-import tech.pegasys.pantheon.ethereum.core.LogsBloomFilter;
-import tech.pegasys.pantheon.ethereum.core.MutableWorldState;
-import tech.pegasys.pantheon.ethereum.core.Wei;
-import tech.pegasys.pantheon.ethereum.core.WorldUpdater;
+import com.google.common.base.MoreObjects;
+import com.google.common.io.Resources;
+import io.vertx.core.json.JsonObject;
+import tech.pegasys.pantheon.ethereum.core.*;
 import tech.pegasys.pantheon.ethereum.development.DevelopmentProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.MainnetProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
 import tech.pegasys.pantheon.ethereum.mainnet.ScheduleBasedBlockHashFunction;
 import tech.pegasys.pantheon.ethereum.worldstate.DefaultMutableWorldState;
 import tech.pegasys.pantheon.ethereum.worldstate.KeyValueStorageWorldStateStorage;
-import tech.pegasys.pantheon.services.kvstore.InMemoryKeyValueStorage;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.source.impl.HashMapDataSource;
 import tech.pegasys.pantheon.util.uint.UInt256;
 
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.google.common.base.MoreObjects;
-import com.google.common.io.Resources;
-import io.vertx.core.json.JsonObject;
 
 public final class GenesisConfig<C> {
 
@@ -165,7 +151,7 @@ public final class GenesisConfig<C> {
   private static Hash calculateGenesisStateHash(final List<GenesisAccount> genesisAccounts) {
     final MutableWorldState worldState =
         new DefaultMutableWorldState(
-            new KeyValueStorageWorldStateStorage(new InMemoryKeyValueStorage()));
+            new KeyValueStorageWorldStateStorage(new HashMapDataSource<>()));
     writeAccountsTo(worldState, genesisAccounts);
     return worldState.rootHash();
   }
