@@ -10,17 +10,17 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.pantheon.ethereum.p2p;
+package tech.pegasys.pantheon.ethereum.storage;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
+import tech.pegasys.pantheon.ethereum.db.BlockchainStorage;
+import tech.pegasys.pantheon.ethereum.mainnet.ProtocolSchedule;
+import tech.pegasys.pantheon.ethereum.worldstate.WorldStateStorage;
 
-public class NetworkMemoryPool {
+import java.io.Closeable;
 
-  private static final ByteBufAllocator ALLOCATOR = new PooledByteBufAllocator();
+public interface StorageProvider extends Closeable {
 
-  public static ByteBuf allocate(final int size) {
-    return ALLOCATOR.ioBuffer(0, size);
-  }
+  BlockchainStorage createBlockchainStorage(ProtocolSchedule<?> protocolSchedule);
+
+  WorldStateStorage createWorldStateStorage();
 }
