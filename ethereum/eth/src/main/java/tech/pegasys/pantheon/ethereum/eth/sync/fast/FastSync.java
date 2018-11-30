@@ -27,71 +27,101 @@ public class FastSync<C> {
 
   private final SyncContext<C> syncContext;
 
-  public FastSync(SyncContext<C> syncContext) {
+  public FastSync(final SyncContext<C> syncContext) {
     this.syncContext = syncContext;
   }
 
   public synchronized void start() {
-    SyncTargetFlow<C> syncTargetFlow = new SyncTargetFlow<>(syncContext);
-    CheckpointHeadersFlow<C> checkpointHeadersFlow = new CheckpointHeadersFlow<>(syncContext);
-    DownloadHeadersFlow<C> downloadHeadersFlow = new DownloadHeadersFlow<>(syncContext);
-    DownloadStateNodesFlow downloadStateNodesFlow = new DownloadStateNodesFlow();
+    final SyncTargetFlow<C> syncTargetFlow = new SyncTargetFlow<>(syncContext);
+    final CheckpointHeadersFlow<C> checkpointHeadersFlow = new CheckpointHeadersFlow<>(syncContext);
+    final DownloadHeadersFlow<C> downloadHeadersFlow = new DownloadHeadersFlow<>(syncContext)
+        .withDownloaderSettings(50, 10)
+        .withValidation(true, 128);
+    final DownloadStateNodesFlow downloadStateNodesFlow = new DownloadStateNodesFlow();
 
-    DownloadBlockBodiesFlow<C> downloadBlockBodiesFlow = new DownloadBlockBodiesFlow<>(syncContext);
-    DownloadReceiptsFlow<C> downloadReceiptsFlow = new DownloadReceiptsFlow<>(syncContext);
+    final DownloadBlockBodiesFlow<C> downloadBlockBodiesFlow = new DownloadBlockBodiesFlow<>(syncContext)
+        .withDownloaderSettings(10, 1);
+    final DownloadReceiptsFlow<C> downloadReceiptsFlow = new DownloadReceiptsFlow<>(syncContext)
+        .withDownloaderSettings(10);
 
-    FastSyncState fastSyncState = loadFastSyncState();
-    MutableBlockchain blockchain = syncContext.getProtocolContext().getBlockchain();
+    final FastSyncState fastSyncState = loadFastSyncState();
+    final MutableBlockchain blockchain = syncContext.getProtocolContext().getBlockchain();
 
-    Flowable<BlockHeader> pivotHeaderFlow;
+    final Flowable<BlockHeader> pivotHeaderFlow;
     if (fastSyncState.getState().isBeforeOrSame(HeadersDownload)) {
       pivotHeaderFlow = Flowable
+          // selecting sync target and checking for better targets in background
           .fromPublisher(syncTargetFlow)
+          // download checkpoint headers from sync target peer
           .compose(checkpointHeadersFlow)
+          // download block headers
           .compose(downloadHeadersFlow)
+          // skipping genesis block
+          .filter(header -> header.getNumber() > 0)
+          // store headers
           .doOnNext(this::storeHeader)
-          .takeLast(1024).firstElement().toFlowable();// take pivot block
+          // take pivot block
+          .takeLast(1024).firstElement().toFlowable();
     } else {
-      Optional<BlockHeader> pivotHeader = blockchain.getBlockHeader(fastSyncState.getPivotBlockHash());
+      // if headers were already downloaded during previous run then just take stored pivot header
+      final Optional<BlockHeader> pivotHeader = blockchain.getBlockHeader(fastSyncState.getPivotBlockHash());
       pivotHeaderFlow = Flowable.just(pivotHeader.orElseThrow(() -> new RuntimeException("No pivot block header found")));
     }
 
-    Flowable<StateNode> rootStateNodesFlow;
+    final Flowable<StateNode> missingStateNodesFlow;
     if (fastSyncState.getState().isBeforeOrSame(StateDownload)) {
-      rootStateNodesFlow = pivotHeaderFlow
+      missingStateNodesFlow = pivotHeaderFlow
+          // convert BlockHeader => initial root StateNode
           .map(pivotHeader -> new StateNode(
               StateNode.NodeType.STATE, pivotHeader.getStateRoot(), BytesValue.EMPTY))
+          // if some state nodes were downloaded previously then it worth
+          // traversing the trie and find missing nodes.
+          // If nothing downloaded yet then the only missing node would be the root node
           .compose(new MissingStateNodesFlow());
     } else {
-      rootStateNodesFlow = Flowable.empty();
+      // if all nodes were already downloaded during previous run then nothing to do here
+      missingStateNodesFlow = Flowable.empty();
     }
 
-    Flowable<StateNode> stateNodeFlow = rootStateNodesFlow
+    final Flowable<StateNode> stateNodeFlow = missingStateNodesFlow
+        // taking the flow of missing nodes download them and their children recursively
         .compose(downloadStateNodesFlow)
+        // store new nodes
         .doOnNext(node -> storeStateNode(node.getNodeHash(), node.getNodeRlp()));
 
-    Flowable<?> regularSyncComplete = RxUtils.singleFuture(this::startRegularSync);
+    // after all state nodes complete then we should proceed with regular sync process
+    // starting from the block = pivotBlock + 1
+    final Flowable<?> regularSyncComplete = RxUtils.singleFuture(this::startRegularSync);
 
-    Flowable<Block> blockBodiesFlow;
+    final Flowable<Block> blockBodiesFlow;
     if (fastSyncState.getState().isBeforeOrSame(BlockBodiesDownload)) {
       blockBodiesFlow = Flowable
+          // enumerate all the headers stored in db starting the last downloaded block in previous run
           .fromPublisher(new DBHeadersFlow(blockchain, fastSyncState.getLastBlockBodyNumber()))
+          // download block bodies
           .compose(downloadBlockBodiesFlow)
+          // store blocks
           .doOnNext(this::storeBlock);
     } else {
+      // if all block are already here then nothing to do
       blockBodiesFlow = Flowable.empty();
     }
 
-    Flowable<Pair<BlockHeader, List<TransactionReceipt>>> receiptsFlow;
+    final Flowable<Pair<BlockHeader, List<TransactionReceipt>>> receiptsFlow;
     if (fastSyncState.getState().isBeforeOrSame(ReceiptsDownload)) {
       receiptsFlow = Flowable
+          // enumerate all the headers stored in db starting the last downloaded receipts in previous run
           .fromPublisher(new DBHeadersFlow(blockchain, fastSyncState.getLastReceiptsBlockNumber()))
+          // download receipts
           .compose(downloadReceiptsFlow)
+          // store receipts
           .doOnNext(this::storeReceipts);
     } else {
+      // if all receipts are already here then nothing to do
       receiptsFlow = Flowable.empty();
     }
 
+    // execute subsequently these steps:
     subscription = Flowable
         .concat(
             stateNodeFlow,
@@ -111,11 +141,11 @@ public class FastSync<C> {
     return new FastSyncState(syncContext.getConfig());
   }
 
-  private void storeFastSyncState(FastSyncState fastSyncState) {
+  private void storeFastSyncState(final FastSyncState fastSyncState) {
 
   }
 
-  private void storeStateNode(Hash nodeHash, BytesValue nodeRLP) {
+  private void storeStateNode(final Hash nodeHash, final BytesValue nodeRLP) {
 
   }
 
@@ -123,14 +153,14 @@ public class FastSync<C> {
     return CompletableFuture.completedFuture(null);
   }
 
-  private void storeBlock(Block block) {
+  private void storeBlock(final Block block) {
 
   }
-  private void storeHeader(BlockHeader header) {
+  private void storeHeader(final BlockHeader header) {
 //    protocolContext.getBlockchain().
   }
 
-  private void storeReceipts(Pair<BlockHeader, List<TransactionReceipt>> blockHeaderListPair) {
+  private void storeReceipts(final Pair<BlockHeader, List<TransactionReceipt>> blockHeaderListPair) {
 
   }
 }
