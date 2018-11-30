@@ -23,7 +23,20 @@ public final class FastSyncState {
     StateDownload,
     BlockBodiesDownload,
     ReceiptsDownload,
-    Complete
+    Complete;
+
+    public boolean isAfter(State otherState) {
+      return this.ordinal() > otherState.ordinal();
+    }
+    public boolean isAfterOrSame(State otherState) {
+      return this.ordinal() >= otherState.ordinal();
+    }
+    public boolean isBefore(State otherState) {
+      return this.ordinal() < otherState.ordinal();
+    }
+    public boolean isBeforeOrSame(State otherState) {
+      return this.ordinal() <= otherState.ordinal();
+    }
   }
 
   private final SynchronizerConfiguration config;
@@ -33,14 +46,30 @@ public final class FastSyncState {
   private Hash lastHeaderHash;
   private Hash pivotBlockHash;
   private long stateNodesComplete;
-  private Hash lastBlockBodyHash;
-  private Hash lastReceiptsBlockHash;
+  private long lastBlockBodyNumber;
+  private long lastReceiptsBlockNumber;
 
   public FastSyncState(final SynchronizerConfiguration config) {
     this.config = config;
   }
 
-//  /**
+  public State getState() {
+    return state;
+  }
+
+  public Hash getPivotBlockHash() {
+    return pivotBlockHash;
+  }
+
+  public long getLastBlockBodyNumber() {
+    return lastBlockBodyNumber;
+  }
+
+  public long getLastReceiptsBlockNumber() {
+    return lastReceiptsBlockNumber;
+  }
+
+  //  /**
 //   * Registers the chain height that we're trying to sync to.
 //   *
 //   * @param blockNumber the height of the chain we are syncing to.
