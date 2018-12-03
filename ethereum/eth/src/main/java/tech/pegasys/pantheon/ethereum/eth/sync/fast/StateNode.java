@@ -6,7 +6,7 @@ import tech.pegasys.pantheon.util.bytes.BytesValue;
 import java.util.List;
 
 /**
- * Created by Anton Nashatyrev on 20.11.2018.
+ * Represents a single state trie node, which may be one of STATE, STORAGE or CODE node
  */
 public class StateNode {
   public enum NodeType {
@@ -45,5 +45,9 @@ public class StateNode {
 
   public BytesValue getNodeRlp() {
     return nodeRlp;
+  }
+
+  public int estimateSize() {
+    return 4 * 8 + 32 + nodePath.size() + (nodeRlp == null ? 0 : nodeRlp.size());
   }
 }

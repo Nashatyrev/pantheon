@@ -22,7 +22,8 @@ import static tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode.FULL;
 import static tech.pegasys.pantheon.ethereum.mainnet.HeaderValidationMode.LIGHT;
 
 /**
- * Created by Anton Nashatyrev on 22.11.2018.
+ * Taking checkpoint headers as input downloads and optionally validates
+ * the headers chain in parallel from all available peers.
  */
 public class DownloadHeadersFlow<C> implements FlowableTransformer<BlockHeader, BlockHeader> {
   private final SecureRandom rnd = new SecureRandom();
@@ -38,12 +39,25 @@ public class DownloadHeadersFlow<C> implements FlowableTransformer<BlockHeader, 
     this.syncContext = syncContext;
   }
 
+  /**
+   * Modifies default headers downloading options
+   * @param maxConcurrency how many concurrent download requests can be issued
+   * @param prefetch hints about the number of downloaded cached headers
+   *                 for assembling them back in the right order
+   */
   public DownloadHeadersFlow<C> withDownloaderSettings(final int maxConcurrency, final int prefetch) {
     this.maxDownloadConcurrency = maxConcurrency;
     this.downloadPrefetch = prefetch;
     return this;
   }
 
+  /**
+   * Sets headers validation options
+   * @param validateHeaders if headers need to be validated
+   * @param validateEveryNthPow performs FULL PoW validation only for each Nth header randomly
+   *                            other headers are validated with LIGHT mode
+   *                            1 means validating every header
+   */
   public DownloadHeadersFlow<C> withValidation(final boolean validateHeaders,
                                                final int validateEveryNthPow) {
     Preconditions.checkArgument(validateEveryNthPow > 0);

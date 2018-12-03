@@ -46,8 +46,8 @@ public final class FastSyncState {
   private Hash lastHeaderHash;
   private Hash pivotBlockHash;
   private long stateNodesComplete;
-  private long lastBlockBodyNumber;
-  private long lastReceiptsBlockNumber;
+  private Hash lastBlockBodyHash;
+  private Hash lastReceiptsBlockHash;
 
   public FastSyncState(final SynchronizerConfiguration config) {
     this.config = config;
@@ -61,12 +61,12 @@ public final class FastSyncState {
     return pivotBlockHash;
   }
 
-  public long getLastBlockBodyNumber() {
-    return lastBlockBodyNumber;
+  public Hash getLastBlockBodyHash() {
+    return lastBlockBodyHash;
   }
 
-  public long getLastReceiptsBlockNumber() {
-    return lastReceiptsBlockNumber;
+  public Hash getLastReceiptsBlockHash() {
+    return lastReceiptsBlockHash;
   }
 
   //  /**

@@ -7,21 +7,23 @@ import org.reactivestreams.Publisher;
 import java.util.function.Function;
 
 /**
- * RX operator which tries to keep the buffer queue full by eagerly requesting data from upstream
- * and releasing data to downstream on request.
+ * Specific buffer for traversing a tree structure.
+ * It tries to keep the specified size bounds by adding newly arrived tree nodes to
+ * either end or beginning of the buffer queue thus balancing
+ * between depth-first and breadth-first traversing
  *
  * The buffer can be bounded by the estimated elements size if sizeEstimator function is supplied
  */
-public class PrefetchBuffer<T> implements FlowableTransformer<T, T> {
+public class TreeTraverseBuffer<T> implements FlowableTransformer<T, T> {
   private final int bufferSize;
   private final Function<T, Integer> sizeEstimator;
 
-  public PrefetchBuffer(final int bufferSize) {
+  public TreeTraverseBuffer(final int bufferSize) {
     this(bufferSize, o -> 1);
   }
 
-  public PrefetchBuffer(final int bufferSize,
-                        final Function<T, Integer> sizeEstimator) {
+  public TreeTraverseBuffer(final int bufferSize,
+                            final Function<T, Integer> sizeEstimator) {
     this.bufferSize = bufferSize;
     this.sizeEstimator = sizeEstimator;
   }

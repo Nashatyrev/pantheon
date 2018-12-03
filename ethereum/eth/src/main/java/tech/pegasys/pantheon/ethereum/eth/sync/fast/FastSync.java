@@ -8,6 +8,7 @@ import tech.pegasys.pantheon.ethereum.core.BlockHeader;
 import tech.pegasys.pantheon.ethereum.core.Hash;
 import tech.pegasys.pantheon.ethereum.core.TransactionReceipt;
 import tech.pegasys.pantheon.ethereum.eth.sync.fast.flows.*;
+import tech.pegasys.pantheon.ethereum.worldstate.WorldStateStorage;
 import tech.pegasys.pantheon.util.Pair;
 import tech.pegasys.pantheon.ethereum.eth.sync.fast.rx.RxUtils;
 import tech.pegasys.pantheon.ethereum.eth.sync.state.FastSyncState;
@@ -23,6 +24,7 @@ import static tech.pegasys.pantheon.ethereum.eth.sync.state.FastSyncState.State.
  * Created by Anton Nashatyrev on 27.11.2018.
  */
 public class FastSync<C> {
+  private static final int MBytes = 1024 * 1024;
   private Disposable subscription;
 
   private final SyncContext<C> syncContext;
@@ -37,7 +39,8 @@ public class FastSync<C> {
     final DownloadHeadersFlow<C> downloadHeadersFlow = new DownloadHeadersFlow<>(syncContext)
         .withDownloaderSettings(50, 10)
         .withValidation(true, 128);
-    final DownloadStateNodesFlow downloadStateNodesFlow = new DownloadStateNodesFlow();
+    final DownloadStateNodesFlow downloadStateNodesFlow = new DownloadStateNodesFlow()
+        .withSettings(50, 128 * MBytes);
 
     final DownloadBlockBodiesFlow<C> downloadBlockBodiesFlow = new DownloadBlockBodiesFlow<>(syncContext)
         .withDownloaderSettings(10, 1);
@@ -77,7 +80,7 @@ public class FastSync<C> {
           // if some state nodes were downloaded previously then it worth
           // traversing the trie and find missing nodes.
           // If nothing downloaded yet then the only missing node would be the root node
-          .compose(new MissingStateNodesFlow());
+          .compose(new MissingStateNodesFlow(getStateStorage()));
     } else {
       // if all nodes were already downloaded during previous run then nothing to do here
       missingStateNodesFlow = Flowable.empty();
@@ -97,7 +100,7 @@ public class FastSync<C> {
     if (fastSyncState.getState().isBeforeOrSame(BlockBodiesDownload)) {
       blockBodiesFlow = Flowable
           // enumerate all the headers stored in db starting the last downloaded block in previous run
-          .fromPublisher(new DBHeadersFlow(blockchain, fastSyncState.getLastBlockBodyNumber()))
+          .fromPublisher(new DBHeadersFlow(blockchain, fastSyncState.getLastBlockBodyHash()))
           // download block bodies
           .compose(downloadBlockBodiesFlow)
           // store blocks
@@ -111,7 +114,7 @@ public class FastSync<C> {
     if (fastSyncState.getState().isBeforeOrSame(ReceiptsDownload)) {
       receiptsFlow = Flowable
           // enumerate all the headers stored in db starting the last downloaded receipts in previous run
-          .fromPublisher(new DBHeadersFlow(blockchain, fastSyncState.getLastReceiptsBlockNumber()))
+          .fromPublisher(new DBHeadersFlow(blockchain, fastSyncState.getLastReceiptsBlockHash()))
           // download receipts
           .compose(downloadReceiptsFlow)
           // store receipts
@@ -121,7 +124,7 @@ public class FastSync<C> {
       receiptsFlow = Flowable.empty();
     }
 
-    // execute subsequently these steps:
+    // execute these steps sequentially :
     subscription = Flowable
         .concat(
             stateNodeFlow,
@@ -138,29 +141,37 @@ public class FastSync<C> {
   }
 
   private FastSyncState loadFastSyncState() {
+    // TODO
     return new FastSyncState(syncContext.getConfig());
   }
 
   private void storeFastSyncState(final FastSyncState fastSyncState) {
-
+    // TODO
   }
 
   private void storeStateNode(final Hash nodeHash, final BytesValue nodeRLP) {
+    // TODO
+  }
 
+  private WorldStateStorage getStateStorage() {
+    // TODO
+    return null;
   }
 
   private CompletableFuture<?> startRegularSync() {
+    // TODO
     return CompletableFuture.completedFuture(null);
   }
 
   private void storeBlock(final Block block) {
-
+    // TODO
   }
   private void storeHeader(final BlockHeader header) {
+    // TODO
 //    protocolContext.getBlockchain().
   }
 
   private void storeReceipts(final Pair<BlockHeader, List<TransactionReceipt>> blockHeaderListPair) {
-
+    // TODO
   }
 }

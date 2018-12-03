@@ -4,15 +4,18 @@ import io.reactivex.Flowable;
 import io.reactivex.FlowableTransformer;
 import org.reactivestreams.Publisher;
 import tech.pegasys.pantheon.ethereum.eth.sync.fast.StateNode;
+import tech.pegasys.pantheon.ethereum.worldstate.WorldStateStorage;
 
 /**
- * Created by Anton Nashatyrev on 20.11.2018.
+ * Taking root state node(s) flow (normally a single state root node) and supplied {@link WorldStateStorage}
+ * emits nodes which are missing from DB.
+ * In case of sync from scratch emits just the original passed node
  */
 public class MissingStateNodesFlow implements FlowableTransformer<StateNode, StateNode> {
 
   private Flowable<StateNode> flow;
 
-  public MissingStateNodesFlow() {
+  public MissingStateNodesFlow(WorldStateStorage stateStorage) {
   }
 
   @Override

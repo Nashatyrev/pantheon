@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Created by Anton Nashatyrev on 22.11.2018.
+ * Taking BlockHeaders as input, download in parallel block receipts and issues
+ * receipts structures preserving the original order
  */
 public class DownloadReceiptsFlow<C> implements
     FlowableTransformer<BlockHeader, Pair<BlockHeader, List<TransactionReceipt>>> {

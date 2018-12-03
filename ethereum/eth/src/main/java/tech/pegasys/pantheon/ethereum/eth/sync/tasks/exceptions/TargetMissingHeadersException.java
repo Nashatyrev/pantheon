@@ -6,13 +6,16 @@ import tech.pegasys.pantheon.ethereum.eth.sync.state.SyncTarget;
 /**
  * Created by Anton Nashatyrev on 23.11.2018.
  */
-public class TargetMissingHeadersException extends RuntimeException {
-  private final SyncTarget syncTarget;
+public class TargetMissingHeadersException extends SyncTargetException {
   private final BlockHeader topmostHeaderReturned;
 
   public TargetMissingHeadersException(SyncTarget syncTarget, BlockHeader topmostHeaderReturned) {
-    super("Target peer didn't return requested headers: " + syncTarget + ", topmost header: " + topmostHeaderReturned);
-    this.syncTarget = syncTarget;
+    super("Target peer didn't return requested headers: " + syncTarget + ", topmost header: " + topmostHeaderReturned
+        , syncTarget);
     this.topmostHeaderReturned = topmostHeaderReturned;
+  }
+
+  public BlockHeader getTopmostHeaderReturned() {
+    return topmostHeaderReturned;
   }
 }

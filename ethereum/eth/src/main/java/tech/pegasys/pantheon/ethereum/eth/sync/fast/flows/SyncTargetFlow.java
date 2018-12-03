@@ -29,7 +29,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by Anton Nashatyrev on 22.11.2018.
+ * Searches for a peer to be the source of initial checkpoint headers
+ * Periodically refreshes and choose a better peer and topmost sync block if any
+ *
+ * Acts as a Publisher and performs refresh activity only when subscribed
+ * On unsubscribe/subscribe refreshes the target peer (the same peer as before can be selected)
+ * so if an unrecoverable error occurs on the stream pipeline the synctaret is normally refreshed
+ *
+ * Emits Optional values: when a sync target is found the value contains the target,
+ * when the target peer is disconnected the publisher emits Optional.empty()
  */
 public class SyncTargetFlow<C> implements Publisher<Optional<SyncTarget>>{
   private static final Logger LOG = LogManager.getLogger();

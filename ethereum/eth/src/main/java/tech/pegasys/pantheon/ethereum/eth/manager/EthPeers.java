@@ -38,7 +38,7 @@ public class EthPeers {
   public static final Comparator<EthPeer> LEAST_TO_MOST_BUSY =
       Comparator.comparing(EthPeer::outstandingRequests);
 
-  private final int maxOutstandingRequests = 5;
+  private final int maxOutstandingRequests = 50;
   private final Map<PeerConnection, EthPeer> connections = new ConcurrentHashMap<>();
   private final String protocolName;
   private final Subscribers<ConnectCallback> connectCallbacks = new Subscribers<>();

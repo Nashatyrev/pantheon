@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Created by Anton Nashatyrev on 22.11.2018.
+ * Taking BlockHeaders as input, download in parallel block bodies and issues Blocks
+ * preserving the original order
  */
 public class DownloadBlockBodiesFlow<C> implements FlowableTransformer<BlockHeader, Block> {
   private final SyncContext<C> syncContext;
@@ -21,18 +22,24 @@ public class DownloadBlockBodiesFlow<C> implements FlowableTransformer<BlockHead
   private int maxDownloadConcurrency = 50;
   private int downloadPrefetch = 200;
 
-  public DownloadBlockBodiesFlow(SyncContext<C> syncContext) {
+  public DownloadBlockBodiesFlow(final SyncContext<C> syncContext) {
     this.syncContext = syncContext;
   }
 
-  public DownloadBlockBodiesFlow<C> withDownloaderSettings(int maxConcurrency, int prefetch) {
+  /**
+   * Modifies default bodies downloading options
+   * @param maxConcurrency how many concurrent download requests can be issued
+   * @param prefetch hints about the number of downloaded cached blocks
+   *                 for assembling them back in the right order
+   */
+  public DownloadBlockBodiesFlow<C> withDownloaderSettings(final int maxConcurrency, final int prefetch) {
     this.maxDownloadConcurrency = maxConcurrency;
     this.downloadPrefetch = prefetch;
     return this;
   }
 
   @Override
-  public Publisher<Block> apply(Flowable<BlockHeader> upstream) {
+  public Publisher<Block> apply(final Flowable<BlockHeader> upstream) {
     return upstream
         // split headers to batches
         .buffer(128) // TODO Flux.buffertimeout(128, 1minute)
@@ -44,7 +51,7 @@ public class DownloadBlockBodiesFlow<C> implements FlowableTransformer<BlockHead
         .flatMap(Flowable::fromIterable);
   }
 
-  protected CompletableFuture<List<Block>> requestBodies(List<BlockHeader> headers) {
+  protected CompletableFuture<List<Block>> requestBodies(final List<BlockHeader> headers) {
     // TODO maxRetries ?
     return CompleteBlocksTask.forHeaders(syncContext.getProtocolSchedule(),
         syncContext.getEthContext(), headers).run();
