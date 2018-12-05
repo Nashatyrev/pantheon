@@ -52,6 +52,17 @@ public class DiscoveryConfiguration {
               .map(DefaultPeer::fromURI)
               .collect(toList()));
 
+  public static List<Peer> GOERLI_BOOTSTRAP_NODES =
+      Collections.unmodifiableList(
+          Stream.of(
+              "enode://04fb7acb86f47b64298374b5ccb3c2959f1e5e9362158e50e0793c261518ffe83759d8295ca4a88091d4726d5f85e6276d53ae9ef4f35b8c4c0cc6b99c8c0537@40.70.214.166:40303",
+              "enode://17de5580bbc1620081a21f82954731c7854305463630a0d677ed991487609829a6bf1ffcb8fb8ef269eff4829690625db176b498c629b9b13cb39b73b6e7b08b@213.186.16.82:1345",
+              "enode://22da3ef3707626a92a32b0527d0846f88228daa0536c62d83c9ac7e96660bc8e4ac70a9aa8f8cedf71b580cd41449ad46c6e5a06ecf138b142f38a9d1b2b856a@85.7.110.224:30303",
+              "enode://3897b1a5786948f643d9755df92dc56d0b2284f36730dc198ef371aebf191b24b5cbe8162c2032b09b2f14ba73460bfc3f7d4ef1e26bcc59297d4f235dc5cdc5@54.88.169.219:30303",
+              "enode://3d197d65ed92af6d0adf280ce486714fb641ef9f9f38f0bdd5ddd552666fc1132f033eb249a87f7f30086902c131f30f054f872ae80ac83eea6bd3760a7bbce2@40.70.214.166:30405")
+              .map(DefaultPeer::fromURI)
+              .collect(toList()));
+
   private boolean active = true;
   private String bindHost = "0.0.0.0";
   private int bindPort = 30303;

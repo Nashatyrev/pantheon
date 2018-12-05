@@ -228,6 +228,12 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
   private final Boolean ropsten = false;
 
   @Option(
+    names = {"--goerli"},
+    description = "Use the Goerli test network (default: ${DEFAULT-VALUE})"
+  )
+  private final Boolean goerli = false;
+
+  @Option(
     names = {"--p2p-listen"},
     paramLabel = MANDATORY_HOST_AND_PORT_FORMAT_HELP,
     description = "Host and port for p2p peers discovery to listen on (default: ${DEFAULT-VALUE})",
@@ -570,6 +576,8 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
       predefinedNetworkConfig = EthNetworkConfig.rinkeby();
     } else if (ropsten) {
       predefinedNetworkConfig = EthNetworkConfig.ropsten();
+    } else if (goerli) {
+      predefinedNetworkConfig = EthNetworkConfig.goerli();
     } else {
       predefinedNetworkConfig = EthNetworkConfig.mainnet();
     }
