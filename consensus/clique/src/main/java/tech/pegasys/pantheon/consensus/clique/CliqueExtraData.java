@@ -14,7 +14,6 @@ package tech.pegasys.pantheon.consensus.clique;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static tech.pegasys.pantheon.util.bytes.BytesValue.*;
 
 import tech.pegasys.pantheon.crypto.SECP256K1.Signature;
 import tech.pegasys.pantheon.ethereum.core.Address;
@@ -93,7 +92,7 @@ public class CliqueExtraData {
         validatorData,
         proposerSeal
             .map(Signature::encodedBytes)
-            .orElse(wrap(new byte[Signature.BYTES_REQUIRED])));
+            .orElse(BytesValue.wrap(new byte[Signature.BYTES_REQUIRED])));
   }
 
   public BytesValue getVanityData() {
@@ -110,14 +109,8 @@ public class CliqueExtraData {
 
   public static String createGenesisExtraDataString(final List<Address> validators) {
     final CliqueExtraData cliqueExtraData =
-        new CliqueExtraData(wrap(new byte[32]), null, validators);
+        new CliqueExtraData(BytesValue.wrap(new byte[32]), null, validators);
     final BytesValue output = cliqueExtraData.encode();
     return output.toString();
-  }
-
-  public static void main(String[] args) throws Exception {
-    BytesValue data = fromHexString("0x2249276d20646f6e652077616974696e672e2e2e20666f7220626c6f636b2066696e616c69747922202d2049676779270000000001fa1804c408085d9c57eeb167ce953c99b6cb1e20794Fd02933F303FbA550bd1fe2f0649E3576eB0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
-    CliqueExtraData extraData = CliqueExtraData.decode(data);
-    System.out.println(extraData);
   }
 }
