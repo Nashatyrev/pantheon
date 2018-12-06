@@ -45,10 +45,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -428,9 +425,9 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
               + "or specify the beneficiary of mining (via --miner-coinbase <Address>)");
       return;
     }
-    if (ropsten && rinkeby) {
+    if (trueCount(ropsten, rinkeby, goerli) > 1) {
       System.out.println(
-          "Unable to connect to multiple networks simultaneously. Remove one of --ropsten or --rinkeby");
+          "Unable to connect to multiple networks simultaneously. Specify one of --ropsten, --rinkeby or --goerli");
       return;
     }
     final EthNetworkConfig ethNetworkConfig = ethNetworkConfig();
@@ -443,6 +440,10 @@ public class PantheonCommand implements DefaultCommandValues, Runnable {
         jsonRpcConfiguration(),
         webSocketConfiguration(),
         permissioningConfiguration());
+  }
+
+  private static int trueCount(final Boolean ... b) {
+    return (int) Arrays.stream(b).filter(bool -> bool).count();
   }
 
   PantheonController<?> buildController() {
