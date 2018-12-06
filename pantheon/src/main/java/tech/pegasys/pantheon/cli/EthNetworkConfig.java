@@ -13,7 +13,10 @@
 package tech.pegasys.pantheon.cli;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static tech.pegasys.pantheon.ethereum.p2p.config.DiscoveryConfiguration.*;
+import static tech.pegasys.pantheon.ethereum.p2p.config.DiscoveryConfiguration.GOERLI_BOOTSTRAP_NODES;
+import static tech.pegasys.pantheon.ethereum.p2p.config.DiscoveryConfiguration.MAINNET_BOOTSTRAP_NODES;
+import static tech.pegasys.pantheon.ethereum.p2p.config.DiscoveryConfiguration.RINKEBY_BOOTSTRAP_NODES;
+import static tech.pegasys.pantheon.ethereum.p2p.config.DiscoveryConfiguration.ROPSTEN_BOOTSTRAP_NODES;
 
 import java.io.IOException;
 import java.net.URI;
