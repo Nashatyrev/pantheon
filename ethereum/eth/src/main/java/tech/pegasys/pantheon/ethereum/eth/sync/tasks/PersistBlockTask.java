@@ -60,6 +60,19 @@ public class PersistBlockTask<C> extends AbstractEthTask<Block> {
         protocolSchedule, protocolContext, block, headerValidationMode, ethTasksTimer);
   }
 
+  public static <C> Supplier<CompletableFuture<Block>> forSingleBlock(
+      final ProtocolSchedule<C> protocolSchedule,
+      final ProtocolContext<C> protocolContext,
+      final Block block,
+      final HeaderValidationMode headerValidationMode) {
+    return () -> importBlockAndAddToList(
+        protocolSchedule,
+        protocolContext,
+        block,
+        new ArrayList<>()
+        , headerValidationMode);
+  }
+
   public static <C> Supplier<CompletableFuture<List<Block>>> forSequentialBlocks(
       final ProtocolSchedule<C> protocolSchedule,
       final ProtocolContext<C> protocolContext,
