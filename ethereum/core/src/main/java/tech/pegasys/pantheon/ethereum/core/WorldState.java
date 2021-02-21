@@ -34,6 +34,15 @@ public interface WorldState extends WorldView {
   /**
    * A stream of all the accounts in this world state.
    *
+   * NOTE: not every WorldState implementation is capable of returning accounts list
+   *       I would assume this method as for debug purposes only, since e.g. enumerating
+   *       accounts in the main net doesn't seem feasible due to huge accounts number
+   *       Another issue is that enumerating accounts based on abstract WorldState can't
+   *       obtain account address but it's hash only
+   *
+   *       M.b. it makes sense move this method to DebuggableMutableWorldState to keep this
+   *       core interface clean
+   *
    * @return a stream of all the accounts (in no particular order) contained in the world state
    *     represented by the root hash of this object at the time of the call.
    */

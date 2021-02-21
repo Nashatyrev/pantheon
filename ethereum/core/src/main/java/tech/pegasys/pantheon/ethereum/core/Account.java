@@ -109,6 +109,8 @@ public interface Account {
    * Retrieves the original value from before the current transaction in the account storage given
    * its key.
    *
+   * NOTE: make sense to push down to the MutableAccount ?
+   *
    * @param key the key to retrieve in the account storage.
    * @return the original value associated to {@code key} in the account storage. Note that this is
    *     never {@code null}, but 0 acts as a default value.
@@ -136,6 +138,8 @@ public interface Account {
   /**
    * Retrieve up to {@code limit} storage entries beginning from the first entry with hash equal to
    * or greater than {@code startKeyHash}.
+   *
+   * NOTE: May be hide this method in some special DebugAccount interface for clarity ?
    *
    * @param startKeyHash the first key hash to return.
    * @param limit the maximum number of entries to return.

@@ -160,6 +160,12 @@ public interface Blockchain {
    *
    * <p><i>No guarantees are made about the order in which observers are invoked.</i>
    *
+   * NOTE: that pattern with observerId looks a bit unusual to me
+   * may be either of below patterns:
+   *    - add/removeBlockAddedObserver(BlockAddedObserver)
+   *    - Subscription subscribeBlockAdded(BlockAddedObserver)
+   *      Subscription.cancel()
+   *
    * @param observer the observer to call
    * @return the observer ID that can be used to remove it later.
    */

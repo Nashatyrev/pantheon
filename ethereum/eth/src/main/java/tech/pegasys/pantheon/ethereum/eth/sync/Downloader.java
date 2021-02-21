@@ -146,6 +146,12 @@ public class Downloader<C> {
     }
 
     final Optional<EthPeer> maybeBestPeer = ethContext.getEthPeers().bestPeer();
+    // NOTE: what if best peer is always invalid/malicious: e.g. reporting
+    // highest TD but feeds you with invalid headers
+    // Can the sync stuck ?
+    // We finally added some randomness for selecting bestPeer, so if even
+    // all of the pees are invalid except one we still have a chance to pick
+    // this single normal peer to sync with
     if (!maybeBestPeer.isPresent()) {
       LOG.info("No sync target, wait for peers.");
       return waitForPeerAndThenSetSyncTarget();

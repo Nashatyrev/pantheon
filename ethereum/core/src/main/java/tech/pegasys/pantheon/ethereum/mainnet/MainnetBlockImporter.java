@@ -83,6 +83,11 @@ public class MainnetBlockImporter<C> implements BlockImporter<C> {
       return false;
     }
 
+    // NOTE: currently on block import the database is updated with 2 transaction:
+    // worldstate changes and and block append. This is fine only for this order of transaction
+    // the opposite order of commits may result in broken state: block exists but its state is missing
+    // with adding database complexity (like prune journal, account cache) this will become unmanageable
+    // thus all db updates made during block import should be committed with a single transaction
     blockchain.appendBlock(block, receipts);
 
     return true;
